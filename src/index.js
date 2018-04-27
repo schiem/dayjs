@@ -30,7 +30,31 @@ class Dayjs {
     this.$m = this.$d.getMinutes()
     this.$s = this.$d.getSeconds()
     this.$ms = this.$d.getMilliseconds()
+    this.locale = {
+      weeks : 'Sunday.Monday.Tuesday.Wednesday.Thursday.Friday.Saturday'.split('.'),
+      months : 'January.February.March.April.May.June.July.August.September.October.November.December'.split('.'),
+      labels : {
+        MS : 'millisecond',
+        S : 'second',
+        MIN : 'minute',
+        H : 'hour',
+        D : 'day',
+        W : 'week',
+        M : 'month',
+        Q : 'quarter',
+        Y : 'year',
+        DATE : 'date'
+      }
+    }
   }
+
+  setLocale(locale) {
+    //In case they didn't pass in the entire list
+    for(let label in locale) {
+      this.locale[label] = locale[label];
+    }
+  }
+
 
   isValid() {
     return !(this.$d.toString() === 'Invalid Date')
@@ -93,7 +117,7 @@ class Dayjs {
     const unit = Utils.prettyUnit(units)
     const instanceFactory = (d, m, y = this.$y) => {
       const ins = new Dayjs(new Date(y, m, d))
-      return isStartOf ? ins : ins.endOf(C.D)
+      return isStartOf ? ins : ins.endOf(this.locale.labels.D)
     }
     const instanceFactorySet = (method, slice) => {
       const argumentStart = [0, 0, 0, 0]
@@ -104,23 +128,23 @@ class Dayjs {
       ))
     }
     switch (unit) {
-      case C.Y:
+      case this.locale.labels.Y:
         return isStartOf ? instanceFactory(1, 0) :
           instanceFactory(31, 11, this.$y)
-      case C.M:
+      case this.locale.labels.M:
         return isStartOf ? instanceFactory(1, this.$M) :
           instanceFactory(0, this.$M + 1, this.$y)
-      case C.W:
+      case this.locale.labels.W:
         return isStartOf ? instanceFactory(this.$D - this.$W, this.$M) :
           instanceFactory(this.$D + (6 - this.$W), this.$M, this.$y)
-      case C.D:
-      case C.DATE:
+      case this.locale.labels.D:
+      case this.locale.labels.DATE:
         return instanceFactorySet('setHours', 0)
-      case C.H:
+      case this.locale.labels.H:
         return instanceFactorySet('setMinutes', 1)
-      case C.MIN:
+      case this.locale.labels.MIN:
         return instanceFactorySet('setSeconds', 2)
-      case C.S:
+      case this.locale.labels.S:
         return instanceFactorySet('setMilliseconds', 3)
       default:
         return this.clone()
@@ -134,25 +158,25 @@ class Dayjs {
   mSet(units, int) {
     const unit = Utils.prettyUnit(units)
     switch (unit) {
-      case C.DATE:
+      case this.locale.labels.DATE:
         this.$d.setDate(int)
         break
-      case C.M:
+      case this.locale.labels.M:
         this.$d.setMonth(int)
         break
-      case C.Y:
+      case this.locale.labels.Y:
         this.$d.setFullYear(int)
         break
-      case C.H:
+      case this.locale.labels.H:
         this.$d.setHours(int)
         break
-      case C.MIN:
+      case this.locale.labels.MIN:
         this.$d.setMinutes(int)
         break
-      case C.S:
+      case this.locale.labels.S:
         this.$d.setSeconds(int)
         break
-      case C.MS:
+      case this.locale.labels.MS:
         this.$d.setMilliseconds(int)
         break
       default:
@@ -169,30 +193,30 @@ class Dayjs {
 
   add(number, units) {
     const unit = (units && units.length === 1) ? units : Utils.prettyUnit(units)
-    if (['M', C.M].indexOf(unit) > -1) {
-      let date = this.set(C.DATE, 1).set(C.M, this.$M + number)
-      date = date.set(C.DATE, Math.min(this.$D, date.daysInMonth()))
+    if (['M', this.locale.labels.M].indexOf(unit) > -1) {
+      let date = this.set(this.locale.labels.DATE, 1).set(this.locale.labels.M, this.$M + number)
+      date = date.set(this.locale.labels.DATE, Math.min(this.$D, date.daysInMonth()))
       return date
     }
-    if (['y', C.Y].indexOf(unit) > -1) {
-      return this.set(C.Y, this.$y + number)
+    if (['y', this.locale.labels.Y].indexOf(unit) > -1) {
+      return this.set(this.locale.labels.Y, this.$y + number)
     }
     let step
     switch (unit) {
       case 'm':
-      case C.MIN:
+      case this.locale.labels.MIN:
         step = C.MILLISECONDS_A_MINUTE
         break
       case 'h':
-      case C.H:
+      case this.locale.labels.H:
         step = C.MILLISECONDS_A_HOUR
         break
       case 'd':
-      case C.D:
+      case this.locale.labels.D:
         step = C.MILLISECONDS_A_DAY
         break
       case 'w':
-      case C.W:
+      case this.locale.labels.W:
         step = C.MILLISECONDS_A_WEEK
         break
       default: // s seconds
@@ -207,8 +231,6 @@ class Dayjs {
   }
 
   format(formatStr = 'YYYY-MM-DDTHH:mm:ssZ') {
-    const weeks = 'Sunday.Monday.Tuesday.Wednesday.Thursday.Friday.Saturday'.split('.')
-    const months = 'January.February.March.April.May.June.July.August.September.October.November.December'.split('.')
 
     return formatStr.replace(/Y{2,4}|M{1,4}|D{1,2}|d{1,4}|H{1,2}|m{1,2}|s{1,2}|Z{1,2}/g, (match) => {
       switch (match) {
@@ -221,9 +243,9 @@ class Dayjs {
         case 'MM':
           return Utils.padStart(String(this.$M + 1), 2, '0')
         case 'MMM':
-          return months[this.$M].slice(0, 3)
+          return this.locale.months[this.$M].slice(0, 3)
         case 'MMMM':
-          return months[this.$M]
+          return this.locale.months[this.$M]
         case 'D':
           return String(this.$D)
         case 'DD':
@@ -231,7 +253,7 @@ class Dayjs {
         case 'd':
           return String(this.$W)
         case 'dddd':
-          return weeks[this.$W]
+          return this.locale.weeks[this.$W]
         case 'H':
           return String(this.$H)
         case 'HH':
@@ -258,21 +280,21 @@ class Dayjs {
     const diff = this - that
     let result = Utils.monthDiff(this, that)
     switch (unit) {
-      case C.Y:
+      case this.locale.labels.Y:
         result /= 12
         break
-      case C.M:
+      case this.locale.labels.M:
         break
-      case C.Q:
+      case this.locale.labels.Q:
         result /= 3
         break
-      case C.W:
+      case this.locale.labels.W:
         result = diff / C.MILLISECONDS_A_WEEK
         break
-      case C.D:
+      case this.locale.labels.D:
         result = diff / C.MILLISECONDS_A_DAY
         break
-      case C.S:
+      case this.locale.labels.S:
         result = diff / C.MILLISECONDS_A_SECOND
         break
       default: // milliseconds
@@ -282,7 +304,7 @@ class Dayjs {
   }
 
   daysInMonth() {
-    return this.endOf(C.M).$D
+    return this.endOf(this.locale.labels.M).$D
   }
 
   clone() {
